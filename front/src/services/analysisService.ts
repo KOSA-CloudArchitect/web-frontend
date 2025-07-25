@@ -23,7 +23,7 @@ export class AnalysisService {
       }
 
       const data = await response.json();
-      
+
       // 백엔드 응답을 프론트엔드 형식으로 변환
       return {
         productId: data.productId || '',

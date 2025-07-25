@@ -4,8 +4,7 @@
 .kiro/
 .vooster/
 
-# Backend (exclude for now)
-backend/
+# Scripts (exclude for now)
 scripts/
 
 # Dependencies

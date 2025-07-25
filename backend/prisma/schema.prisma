@@ -1,0 +1,60 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model AnalysisResult {
+  id            String   @id @default(cuid())
+  productId     String   @unique @map("product_id")
+  positiveRate  Float    @map("positive_rate")
+  negativeRate  Float    @map("negative_rate")
+  neutralRate   Float    @map("neutral_rate")
+  summary       String
+  keywords      Json     @db.JsonB
+  totalReviews  Int      @map("total_reviews")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  keywordEntries Keyword[]
+
+  @@map("analysis_results")
+}
+
+model Keyword {
+  id              String   @id @default(cuid())
+  analysisResultId String  @map("analysis_result_id")
+  keyword         String
+  sentiment       String   // 'positive', 'negative', 'neutral'
+  frequency       Int
+  confidence      Float
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  analysisResult  AnalysisResult @relation(fields: [analysisResultId], references: [id], onDelete: Cascade)
+
+  @@map("keywords")
+}
+
+model AnalysisStatus {
+  id            String    @id @default(cuid())
+  productId     String    @unique @map("product_id")
+  status        String    // 'pending', 'processing', 'completed', 'failed'
+  progress      Int       @default(0)
+  estimatedTime Int?      @map("estimated_time")
+  errorMessage  String?   @map("error_message")
+  taskId        String?   @map("task_id")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  completedAt   DateTime? @map("completed_at")
+
+  @@map("analysis_status")
+}
