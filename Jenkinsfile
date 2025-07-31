@@ -37,6 +37,7 @@ pipeline {
             steps {
                 script {
                     echo "Activating GCP service account credentials..."
+                    sh "export PATH=${PATH}:/usr/bin/gcloud"
                     sh "gcloud auth activate-service-account --key-file=${GCP_KEY_FILE} --project=${GCP_PROJECT_ID}"
                     // (선택 사항: GKE 클러스터 자격 증명도 미리 가져올 수 있음)
                     // sh "gcloud container clusters get-credentials ${env.GKE_CLUSTER_NAME} --region ${env.GCP_REGION} --project ${env.GCP_PROJECT_ID}"
