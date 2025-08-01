@@ -9,7 +9,7 @@ pipeline {
     environment {
         GCP_PROJECT_ID = 'kwon-cicd'
         GCP_REGION     = 'asia-northeast3'
-        GCP_KEY_FILE   = '/home/kwon/kwon-cicd-ddec4bdb866f.json'
+        GCP_KEY_FILE   = '/home/kwon/kwon-cicd-18aee0fb34ae.json'
 
         GCR_REGISTRY_HOST = "${GCP_REGION}-docker.pkg.dev"
         GCR_REPO_NAME = "my-web-app-repo/web-server-backend"
