@@ -1,7 +1,7 @@
 pipeline {
     agent {
         docker {
-            image 'asia-northeast3-docker.pkg.dev/kwon-cicd/my-web-app-repo/jenkins-agent-gcloud:latest' //  빌드한 커스텀 에이전트 이미지로 변경
+            image 'jenkins/jenkins:lts' // 빌드한 이미지명
             args '-u root'                      // gcloud 같은 명령 실행을 위해 root 권한 필요
         }
     }
