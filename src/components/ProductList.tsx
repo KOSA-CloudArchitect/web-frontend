@@ -90,7 +90,7 @@ export default function ProductList({ categoryId }: ProductListProps) {
             <img 
               src={product.image_url} 
               alt={product.name}
-              className="w-full h-48 object-cover"
+              className="w-full h-48 object-contain bg-gray-50"
             />
             {/* 하트 버튼 */}
             <div className="absolute top-2 right-2">

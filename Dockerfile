@@ -1,31 +1,53 @@
 # =========================
-# 1) Build (React)
+# 1) Install deps
 # =========================
 FROM node:20-alpine AS deps
 WORKDIR /app
-RUN apk add --no-cache libc6-compat
-COPY package.json package-lock.json* ./
-RUN npm ci && npm cache clean --force
 
+# 기본 유틸
+RUN apk add --no-cache libc6-compat
+
+# npm 동작 최적화/안정 옵션
+ENV NPM_CONFIG_FUND=false \
+    NPM_CONFIG_AUDIT=false \
+    CI=true
+
+# 의존성 전용 레이어 (캐시 최적화)
+COPY package.json package-lock.json* ./
+
+# lock 불일치/peer 충돌 회피
+# - devDependencies 포함(React 빌드에 typescript 등 필요할 수 있음)
+RUN npm install --legacy-peer-deps && npm cache clean --force
+
+# =========================
+# 2) Build (React)
+# =========================
 FROM node:20-alpine AS builder
 WORKDIR /app
+
+# 의존성 복사
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
+
+# CRA/일반 리액트 빌드에서 소스맵 비활성 (용량 절감)
+ENV NODE_ENV=production
 ENV GENERATE_SOURCEMAP=false
+
+# 앱 빌드
 RUN npm run build
 
 # =========================
-# 2) Runtime (nginx-unprivileged)
+# 3) Runtime (nginx-unprivileged)
 # =========================
 FROM nginxinc/nginx-unprivileged:stable-alpine AS runner
 WORKDIR /usr/share/nginx/html
 
-# React 정적 파일 복사
+# 정적 산출물 복사
 COPY --from=builder /app/build .
 
 USER root
 
-# Nginx 설정을 heredoc으로 한 번에 작성
+# Nginx 설정
 RUN mkdir -p /etc/nginx/conf.d && cat >/etc/nginx/conf.d/default.conf <<'NGINX'
 server {
     listen 8080;
@@ -65,8 +87,8 @@ server {
         try_files $uri /index.html;
     }
 
-    # ⚠️ Ingress가 /api, /socket.io 라우팅 하므로 컨테이너 내부 프록시는 불필요
-    # 필요 시 테스트 용으로만 사용하세요.
+    # Ingress가 /api, /socket.io 라우팅 → 내부 프록시 불필요
+    # 필요 시 테스트용으로만 사용
     # location /api {
     #     proxy_pass http://backend-service.web-tier.svc.cluster.local:3001;
     #     proxy_http_version 1.1;
@@ -78,5 +100,10 @@ server {
 }
 NGINX
 
+# 비루트 실행
 USER 101
 EXPOSE 8080
+
+# (선택) 컨테이너 헬스체크
+HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
+  CMD wget -qO- http://127.0.0.1:8080/health || exit 1

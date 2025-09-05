@@ -24,13 +24,7 @@ export const ErrorMessage: React.FC<ErrorMessageProps> = ({
   className = '',
 }) => {
   // Router 컨텍스트 내에서만 useNavigate 사용
-  let navigate: ReturnType<typeof useNavigate> | null = null;
-  try {
-    navigate = useNavigate();
-  } catch (error) {
-    // Router 외부에서 사용되는 경우 navigate를 null로 설정
-    console.warn('ErrorMessage: useNavigate는 Router 컨텍스트 내에서만 사용 가능합니다.');
-  }
+  const navigate = useNavigate();
 
   const getErrorIcon = () => {
     switch (type) {

@@ -127,8 +127,8 @@ export const MainPage: React.FC = () => {
     localStorage.setItem('recentSearches', JSON.stringify(updatedRecent));
 
     // 즉시 검색 페이지로 이동 (API 호출 없이)
-    console.log(`🚀 즉시 검색 페이지로 이동: /search?q=${encodeURIComponent(query)}`);
-    navigate(`/search?q=${encodeURIComponent(query)}`);
+    console.log(`🚀 즉시 검색 페이지로 이동: /search?query=${encodeURIComponent(query)}`);
+    navigate(`/search?query=${encodeURIComponent(query)}`);
     
     // 검색 페이지에서 모든 로딩과 폴링 처리를 담당하도록 함
   };
@@ -575,28 +575,29 @@ export const MainPage: React.FC = () => {
                     <div className="p-6 bg-white">
                       {keywordProducts[item.keyword] ? (
                         keywordProducts[item.keyword].length > 0 ? (
-                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
                             {keywordProducts[item.keyword].slice(0, 8).map((product) => {
                               const displayData = getProductDisplayData(product);
                               return (
                                 <div
                                   key={displayData.id}
-                                  className="bg-gray-50 border rounded-lg overflow-hidden cursor-pointer hover:shadow-md transition-shadow relative"
+                                  className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden cursor-pointer hover:shadow-md transition-all duration-200 hover:border-blue-200"
                                   onClick={() => handleProductClick(product)}
                                 >
-                                  {/* 장바구니 아이콘 */}
-                                  <div className="absolute top-2 right-2 z-10">
-                                    <div className="bg-purple-600 text-white p-1.5 rounded-full shadow-sm">
-                                      <ShoppingCart className="w-4 h-4" />
-                                    </div>
-                                  </div>
-
                                   {/* 상품 이미지 */}
                                   <div className="relative">
-                                    <img
-                                      src={displayData.image}
-                                      alt={displayData.name}
-                                      className="w-full h-32 object-cover"
+                                    {/* 장바구니 아이콘 */}
+                                    <div className="absolute top-2 right-2 z-10">
+                                      <div className="bg-purple-600 text-white p-1 rounded-full shadow-sm">
+                                        <ShoppingCart className="w-3 h-3" />
+                                      </div>
+                                    </div>
+
+                                    <div className="aspect-square bg-gray-50 flex items-center justify-center p-3">
+                                      <img
+                                        src={displayData.image}
+                                        alt={displayData.name}
+                                        className="w-full h-full object-contain"
                                       onError={(e) => {
                                         const target = e.target as HTMLImageElement;
                                         const currentSrc = target.src;
@@ -619,29 +620,30 @@ export const MainPage: React.FC = () => {
                                           target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjE1MCIgdmlld0JveD0iMCAwIDIwMCAxNTAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iMTUwIiBmaWxsPSIjRjBGMEYwIi8+Cjx0ZXh0IHg9IjEwMCIgeT0iNzUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzk5OTk5OSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZG9taW5hbnQtYmFzZWxpbmU9ImNlbnRyYWwiPuydtOuvuOyngOyXhuydjDwvdGV4dD4KPHN2Zz4=';
                                         }
                                       }}
-                                    />
+                                      />
+                                    </div>
                                   </div>
 
                                   {/* 상품 정보 */}
-                                  <div className="p-3">
-                                    <h4 className="text-sm font-medium text-gray-800 mb-2 line-clamp-2 leading-tight">
+                                  <div className="p-3 space-y-2">
+                                    <h4 className="text-sm font-medium text-gray-800 line-clamp-2 min-h-[2.5rem] leading-tight">
                                       {displayData.name}
                                     </h4>
 
                                     {/* 가격 정보 */}
-                                    <div className="mb-2">
-                                      <div className="flex items-center gap-1 mb-1">
+                                    <div className="space-y-1">
+                                      <div className="flex items-center gap-1">
                                         {displayData.discount && (
-                                          <span className="text-sm text-orange-500 font-bold">
+                                          <span className="bg-red-500 text-white px-1.5 py-0.5 rounded text-xs font-bold">
                                             {displayData.discount}%
                                           </span>
                                         )}
-                                        <span className="text-base font-bold text-gray-900">
+                                        <span className="text-red-500 font-bold text-base">
                                           {formatPrice(displayData.finalPrice)}
                                         </span>
                                       </div>
                                       {displayData.discount && displayData.originalPrice && (
-                                        <div className="text-sm text-gray-500 line-through">
+                                        <div className="text-xs text-gray-400 line-through">
                                           {formatPrice(displayData.originalPrice)}
                                         </div>
                                       )}
@@ -651,11 +653,18 @@ export const MainPage: React.FC = () => {
                                     {displayData.rating > 0 && (
                                       <div className="flex items-center gap-1">
                                         {renderStars(displayData.rating)}
-                                        <span className="text-sm text-gray-500">
+                                        <span className="text-xs text-gray-500">
                                           ({displayData.reviewCount.toLocaleString()})
                                         </span>
                                       </div>
                                     )}
+                                    
+                                    {/* 라벨 */}
+                                    <div className="flex flex-wrap gap-1">
+                                      <span className="text-xs bg-purple-50 text-purple-600 px-2 py-1 rounded">
+                                        {item.keyword}
+                                      </span>
+                                    </div>
                                   </div>
                                 </div>
                               );
@@ -698,20 +707,20 @@ export const MainPage: React.FC = () => {
               </button>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
               {recommendedProducts.slice(0, 8).map((product) => {
                 const displayData = getProductDisplayData(product);
                 return (
-                  <Card
+                  <div
                     key={displayData.id}
-                    className="overflow-hidden cursor-pointer"
-                    hoverable
+                    className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden cursor-pointer hover:shadow-md transition-all duration-200 hover:border-blue-200"
                     onClick={() => handleProductClick(product)}
                   >
-                    <img
-                      src={displayData.image}
-                      alt={displayData.name}
-                      className="w-full h-48 object-cover"
+                    <div className="aspect-square bg-gray-50 flex items-center justify-center p-3">
+                      <img
+                        src={displayData.image}
+                        alt={displayData.name}
+                        className="w-full h-full object-contain"
                       onError={(e) => {
                         const target = e.target as HTMLImageElement;
                         const currentSrc = target.src;
@@ -734,21 +743,27 @@ export const MainPage: React.FC = () => {
                           target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDMwMCAyMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIzMDAiIGhlaWdodD0iMjAwIiBmaWxsPSIjRjBGMEYwIi8+Cjx0ZXh0IHg9IjE1MCIgeT0iMTAwIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTQiIGZpbGw9IiM5OTk5OTkiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJjZW50cmFsIj7snbTrr7jsp4DslYbsnYw8L3RleHQ+Cjwvc3ZnPg==';
                         }
                       }}
-                    />
-                    <div className="p-4">
-                      <h4 className="text-sm font-medium text-gray-800 mb-2 line-clamp-2">
+                      />
+                    </div>
+                    <div className="p-3 space-y-2">
+                      <h4 className="text-sm font-medium text-gray-800 line-clamp-2 min-h-[2.5rem] leading-tight">
                         {displayData.name}
                       </h4>
                       {displayData.rating > 0 && (
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1">
                           {renderStars(displayData.rating)}
-                          <span className="text-sm text-gray-500">
+                          <span className="text-xs text-gray-500">
                             ({displayData.reviewCount.toLocaleString()})
                           </span>
                         </div>
                       )}
+                      <div className="flex flex-wrap gap-1">
+                        <span className="text-xs bg-blue-50 text-blue-600 px-2 py-1 rounded">
+                          추천상품
+                        </span>
+                      </div>
                     </div>
-                  </Card>
+                  </div>
                 );
               })}
             </div>

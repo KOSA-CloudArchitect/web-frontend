@@ -35,8 +35,13 @@ export const getWebSocketUrl = () => {
   
   // 런타임 환경변수만 사용 (빌드타임 환경변수 완전 무시)
   if (runtimeConfig.WS_URL) {
-    console.log('✅ Using runtime WS_URL:', runtimeConfig.WS_URL);
-    return runtimeConfig.WS_URL;
+    // Socket.IO가 자동으로 /socket.io 경로를 추가하므로, URL에서 /socket.io 제거
+    let wsUrl = runtimeConfig.WS_URL;
+    if (wsUrl.endsWith('/socket.io')) {
+      wsUrl = wsUrl.replace('/socket.io', '');
+    }
+    console.log('✅ Using runtime WS_URL (cleaned):', wsUrl);
+    return wsUrl;
   }
   
   // 런타임 환경변수가 없으면 기본값 사용: 현재 호스트 기반으로 구성

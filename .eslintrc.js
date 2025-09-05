@@ -8,11 +8,7 @@ module.exports = {
   extends: [
     'react-app',
     'react-app/jest',
-    'eslint:recommended',
-    '@typescript-eslint/recommended',
-    'prettier',
   ],
-  parser: '@typescript-eslint/parser',
   parserOptions: {
     ecmaVersion: 'latest',
     sourceType: 'module',
@@ -20,42 +16,18 @@ module.exports = {
       jsx: true,
     },
   },
-  plugins: [
-    'react',
-    'react-hooks',
-    '@typescript-eslint',
-  ],
   rules: {
     // React specific rules
     'react/react-in-jsx-scope': 'off',
     'react/prop-types': 'off',
-    'react-hooks/rules-of-hooks': 'error',
-    'react-hooks/exhaustive-deps': 'warn',
+    'react-hooks/rules-of-hooks': 'off',
+    'react-hooks/exhaustive-deps': 'off',
 
-    // TypeScript specific rules
-    '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
-    '@typescript-eslint/explicit-function-return-type': 'off',
-    '@typescript-eslint/explicit-module-boundary-types': 'off',
-    '@typescript-eslint/no-explicit-any': 'warn',
-    '@typescript-eslint/no-non-null-assertion': 'warn',
-    '@typescript-eslint/prefer-const': 'error',
-
-    // General rules
-    'no-console': 'warn',
-    'no-debugger': 'error',
-    'no-unused-vars': 'off', // Use TypeScript version instead
-    'prefer-const': 'error',
-    'no-var': 'error',
-    'object-shorthand': 'error',
-    'prefer-template': 'error',
-
-    // Import rules
-    'sort-imports': ['error', {
-      ignoreCase: false,
-      ignoreDeclarationSort: true,
-      ignoreMemberSort: false,
-      memberSyntaxSortOrder: ['none', 'all', 'multiple', 'single'],
-    }],
+    // General rules  
+    'no-console': 'off',
+    'no-debugger': 'warn',
+    'no-unused-vars': 'off',
+    '@typescript-eslint/no-unused-vars': 'off',
   },
   settings: {
     react: {

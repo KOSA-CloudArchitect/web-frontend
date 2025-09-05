@@ -4,6 +4,7 @@ import NavBar from "../components/NavBar";
 import BottomBar from "../components/BottomBar";
 import ProductList from "../components/ProductList";
 import { HeartButton } from "../components/HeartButton";
+import { useWebSocket } from "../hooks/useWebSocket";
 
 // 추천 검색어 예시 (고정)
 const RECOMMEND_SUGGESTIONS = [
@@ -84,12 +85,16 @@ export default function SearchListPage() {
   const [products, setProducts] = useState([]);
   const [error, setError] = useState(null);
   const [crawlId, setCrawlId] = useState(null);
-  const [crawlStatus, setCrawlStatus] = useState(null);
   const [manualCrawling, setManualCrawling] = useState(false); // 수동 크롤링 상태
   const [currentPage, setCurrentPage] = useState(1); // 현재 페이지 (10개씩)
   const [hasMorePages, setHasMorePages] = useState(true); // 더 많은 페이지가 있는지
   const [inputValue, setInputValue] = useState(query); // 입력 필드 로컬 상태
-  const pollingRef = useRef(null);
+  
+  // WebSocket 연결 - productId는 더미 값 사용
+  const { subscribeToSearch, isConnected } = useWebSocket({
+    productId: 'search-page',
+    autoConnect: true,
+  });
 
   // 가격 포맷팅
   const formatPrice = (priceString) => {
@@ -139,7 +144,40 @@ export default function SearchListPage() {
     }
   };
 
-  // 검색 실행 (POST → 필요 시 폴백 GET)
+  // WebSocket 검색 상태 콜백 설정
+  const setupSearchCallback = React.useCallback(() => {
+    window.searchStatusCallback = (status) => {
+      console.log('🔔 Search status update received:', status);
+      
+      if (status.status === 'started') {
+        setLoadingStep(`검색 시작: ${status.keyword}`);
+      } else if (status.status === 'crawling') {
+        // 크롤링 상태 업데이트
+        const crawlingMsg = status.crawlingStatus === 'processing' 
+          ? `크롤링 진행 중... (${status.pollCount}회 확인)`
+          : '크롤링 대기 중...';
+        setLoadingStep(`${status.message} - ${crawlingMsg}`);
+      } else if (status.status === 'crawling-done') {
+        setLoadingStep(`크롤링 완료: ${status.keyword}`);
+      } else if (status.status === 'completed') {
+        if (status.products && status.products.length > 0) {
+          setProducts(status.products);
+          setLoadingStep('');
+          setLoading(false);
+        } else {
+          setError("검색 결과가 없습니다.");
+          setLoadingStep('');
+          setLoading(false);
+        }
+      } else if (status.status === 'error') {
+        setError(status.error || "검색 중 오류가 발생했습니다.");
+        setLoadingStep('');
+        setLoading(false);
+      }
+    };
+  }, []);
+
+  // 검색 실행 (POST → WebSocket으로 결과 대기)
   const handleSearch = React.useCallback(async () => {
     if (!query || !query.trim()) return;
 
@@ -148,6 +186,9 @@ export default function SearchListPage() {
     setProducts([]);
     setCurrentPage(1);
     setHasMorePages(true);
+
+    // WebSocket 콜백 설정
+    setupSearchCallback();
 
     try {
       // 1) POST로 비동기 크롤링 시작
@@ -166,12 +207,16 @@ export default function SearchListPage() {
         const crawlData = await crawlResponse.json();
         if (crawlData.success) {
           if (crawlData.status === "completed" && crawlData.products && crawlData.products.length > 0) {
+            // 즉시 완료된 경우
             setProducts(crawlData.products);
             setLoading(false);
             return;
           } else if (crawlData.jobId && crawlData.status !== "completed") {
+            // WebSocket으로 결과 구독
             setCrawlId(crawlData.jobId);
-            pollJobStatus(crawlData.jobId);
+            console.log('🔗 WebSocket 검색 구독 시작:', crawlData.jobId);
+            subscribeToSearch(crawlData.jobId);
+            setLoadingStep(`검색 작업 시작됨: ${crawlData.jobId}`);
             return;
           }
         }
@@ -210,106 +255,7 @@ export default function SearchListPage() {
     }
 
     setLoading(false);
-  }, [query]);
-
-  // 작업 상태 폴링
-  const pollJobStatus = React.useCallback(
-    async (jobId) => {
-      let attempts = 0;
-      const maxAttempts = 60;
-
-      const poll = async () => {
-        try {
-          const res = await fetch(`/api/products/status/${jobId}`);
-          if (res.ok) {
-            const statusData = await res.json();
-
-            if (statusData.status === "completed") {
-              if (statusData.products && statusData.products.length > 0) {
-                setProducts(statusData.products);
-              } else {
-                console.log(`📡 폴링 완료 후 GET으로 캐시된 데이터 조회: "${query}"`);
-                const getRes = await fetch(`/api/products?q=${encodeURIComponent(query)}`);
-                if (getRes.ok) {
-                  const getData = await getRes.json();
-                  console.log(`📊 폴링 후 GET API 응답:`, getData);
-                  
-                  // 다양한 응답 구조 처리
-                  let productList = null;
-                  if (getData.products && Array.isArray(getData.products)) {
-                    productList = getData.products;
-                  } else if (getData.data && Array.isArray(getData.data)) {
-                    productList = getData.data;
-                  } else if (Array.isArray(getData)) {
-                    productList = getData;
-                  }
-                  
-                  if (productList && productList.length > 0) {
-                    console.log(`✅ 폴링 후 캐시된 데이터 ${productList.length}개 상품 발견`);
-                    setProducts(productList);
-                  } else {
-                    console.log(`⚠️ 폴링 후 캐시된 데이터 없음`);
-                    setError("검색 결과가 없습니다.");
-                  }
-                }
-              }
-              setLoading(false);
-              return;
-            } else if (statusData.status === "failed") {
-              console.log(`📡 폴링 실패 후 GET으로 캐시된 데이터 조회: "${query}"`);
-              const getRes = await fetch(`/api/products?q=${encodeURIComponent(query)}`);
-              if (getRes.ok) {
-                const getData = await getRes.json();
-                console.log(`📊 폴링 실패 후 GET API 응답:`, getData);
-                
-                // 다양한 응답 구조 처리
-                let productList = null;
-                if (getData.products && Array.isArray(getData.products)) {
-                  productList = getData.products;
-                } else if (getData.data && Array.isArray(getData.data)) {
-                  productList = getData.data;
-                } else if (Array.isArray(getData)) {
-                  productList = getData;
-                }
-                
-                if (productList && productList.length > 0) {
-                  console.log(`✅ 폴링 실패 후 캐시된 데이터 ${productList.length}개 상품 발견`);
-                  setProducts(productList);
-                } else {
-                  console.log(`⚠️ 폴링 실패 후 캐시된 데이터 없음`);
-                  setError("검색 결과가 없습니다.");
-                }
-              } else {
-                console.error(`❌ 폴링 실패 후 GET API도 실패: ${getRes.status}`);
-                setError("검색 중 오류가 발생했습니다.");
-              }
-              setLoading(false);
-              return;
-            }
-
-            attempts++;
-            if (attempts < maxAttempts) {
-              setTimeout(poll, 3000);
-            } else {
-              const getRes = await fetch(`/api/products?q=${encodeURIComponent(query)}`);
-              if (getRes.ok) {
-                const getData = await getRes.json();
-                if (getData.products && getData.products.length > 0) setProducts(getData.products);
-                else setError("검색 시간이 초과되었습니다.");
-              }
-              setLoading(false);
-            }
-          }
-        } catch (error) {
-          setError("상태 확인 중 오류가 발생했습니다.");
-          setLoading(false);
-        }
-      };
-
-      poll();
-    },
-    [query]
-  );
+  }, [query, subscribeToSearch, setupSearchCallback]);
 
   // 다음 페이지 수동 크롤링
   const handleManualCrawl = React.useCallback(async () => {
@@ -401,55 +347,45 @@ export default function SearchListPage() {
       setLoading(false);
       setProducts([]);
       setError(null);
+      setCrawlId(null);
+      setCurrentPage(1);
+      setHasMorePages(true);
       return;
     }
     console.log(`🔍 SearchListPage URL 변경으로 검색 실행: query="${query}"`);
     setProducts([]);
     setError(null);
     setLoading(true);
+    setCrawlId(null);
+    setCurrentPage(1);
+    setHasMorePages(true);
     handleSearch();
-    return () => {
-      if (pollingRef.current) pollingRef.current();
-    };
-  }, [query]); // handleSearch 의존성 제거하여 불필요한 재실행 방지
+  }, [query, handleSearch]);
 
   // query 바뀌면 상태 초기화 및 inputValue 동기화
   useEffect(() => {
+    console.log(`🔄 URL query 변경 감지: "${query}"`);
     setInputValue(query); // URL query와 입력값 동기화
+    
     if (!query || !query.trim()) {
       setProducts([]);
       setError(null);
       setLoading(false);
+      setCrawlId(null);
+      setCurrentPage(1);
+      setHasMorePages(true);
     }
   }, [query]);
 
-  // 크롤링 상태 확인
+  // 컴포넌트 언마운트 시 WebSocket 콜백 정리
   useEffect(() => {
-    if (!crawlId) return;
-
-    const checkCrawlStatus = async () => {
-      try {
-        const res = await fetch(`/api/products/crawl/${crawlId}`);
-        const data = await res.json();
-        setCrawlStatus(data);
-
-        if (data.status === "processing") {
-          setTimeout(checkCrawlStatus, 1000);
-        } else if (data.status === "completed") {
-          setProducts(data.products);
-          setLoading(false);
-        } else if (data.status === "failed") {
-          setError(data.message);
-          setLoading(false);
-        }
-      } catch (err) {
-        setError("크롤링 상태를 확인하는 중 오류가 발생했습니다.");
-        setLoading(false);
+    return () => {
+      // 전역 콜백 정리
+      if (window.searchStatusCallback) {
+        window.searchStatusCallback = null;
       }
     };
-
-    checkCrawlStatus();
-  }, [crawlId]);
+  }, []);
 
   return (
     <>
@@ -545,7 +481,7 @@ export default function SearchListPage() {
         ) : products.length === 0 ? (
           <div className="p-8 text-center text-gray-400">검색 결과가 없습니다.</div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
             {products.map((product, index) => {
               const productForHeart = {
                 id: product.product_code || `product-${index}`,
@@ -568,7 +504,7 @@ export default function SearchListPage() {
               return (
                 <div
                   key={product.product_code || index}
-                  className="bg-white rounded-lg shadow-md overflow-hidden p-4 relative cursor-pointer hover:shadow-lg transition-shadow"
+                  className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden cursor-pointer hover:shadow-md transition-all duration-200 hover:border-blue-200"
                   onClick={async () => {
                     const productCode = product.product_code;
                     const productUrl = product.url || `https://www.coupang.com/products/${productCode}`;
@@ -606,37 +542,39 @@ export default function SearchListPage() {
                     }
                   }}
                 >
-                  {/* 하트 버튼 */}
-                  <div className="absolute top-3 right-3 z-10" onClick={(e) => e.stopPropagation()}>
-                    <HeartButton
-                      product={productForHeart}
-                      size="md"
-                      className="bg-white bg-opacity-80 rounded-full p-1 shadow-sm hover:bg-opacity-100"
-                    />
+                  {/* 이미지 컨테이너 */}
+                  <div className="relative bg-white">
+                    {/* 하트 버튼 */}
+                    <div className="absolute top-2 right-2 z-10" onClick={(e) => e.stopPropagation()}>
+                      <HeartButton
+                        product={productForHeart}
+                        size="sm"
+                        className="bg-white bg-opacity-90 rounded-full p-1 shadow-sm hover:bg-opacity-100"
+                      />
+                    </div>
+
+                    {/* 상품 이미지 */}
+                    {product.image_url && (
+                      <div className="aspect-square bg-gray-50 flex items-center justify-center p-3">
+                        <img
+                          src={product.image_url}
+                          alt={product.title || product.product_code}
+                          className="w-full h-full object-contain"
+                        />
+                      </div>
+                    )}
                   </div>
 
-                  {/* 상품 이미지 */}
-                  {product.image_url && (
-                    <img
-                      src={product.image_url}
-                      alt={product.title || product.product_code}
-                      className="w-full h-32 object-cover rounded mb-3"
-                    />
-                  )}
-
                   {/* 상품 정보 */}
-                  <div>
-                    <h3 className="font-semibold text-sm mb-2 pr-8">
+                  <div className="p-3 space-y-2">
+                    <h3 className="text-sm font-medium text-gray-800 line-clamp-2 min-h-[2.5rem] leading-tight">
                       {product.title || product.product_code || "상품명 없음"}
                     </h3>
 
-                    {/* 가격 정보 */}
-                    <div className="mb-2">
+                    {/* 할인율과 가격 */}
+                    <div className="space-y-1">
                       {product.final_price && (
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-blue-600 font-bold text-lg">
-                            {formatPrice(product.final_price)}
-                          </span>
+                        <div className="flex items-center gap-1">
                           {product.origin_price &&
                             product.origin_price !== product.final_price &&
                             (() => {
@@ -645,47 +583,52 @@ export default function SearchListPage() {
                                 product.final_price
                               );
                               return discountRate ? (
-                                <span className="bg-red-500 text-white px-2 py-1 rounded text-xs font-bold">
-                                  {discountRate}% 할인
+                                <span className="bg-red-500 text-white px-1.5 py-0.5 rounded text-xs font-bold">
+                                  {discountRate}%
                                 </span>
                               ) : null;
                             })()}
+                          <span className="text-red-500 font-bold text-base">
+                            {formatPrice(product.final_price)}
+                          </span>
                         </div>
                       )}
 
                       {product.origin_price && product.origin_price !== product.final_price && (
-                        <p className="text-gray-500 line-through text-sm">
+                        <p className="text-gray-400 line-through text-xs">
                           {formatPrice(product.origin_price)}
                         </p>
                       )}
                     </div>
 
-                    {/* ⭐ 별점 (아이콘 5개) */}
+                    {/* 별점과 리뷰 */}
                     {product.review_rating && (
-                      <div className="flex items-center mb-2">
+                      <div className="flex items-center gap-1">
                         {renderStars(product.review_rating)}
                         {product.review_count && (
-                          <span className="ml-2 text-sm text-gray-500">
-                            ({product.review_count}개 리뷰)
+                          <span className="text-xs text-gray-500">
+                            ({product.review_count})
                           </span>
                         )}
                       </div>
                     )}
 
-                    <div className="flex justify-between items-center mt-3">
+                    {/* 배송 정보나 기타 라벨 */}
+                    <div className="flex flex-wrap gap-1">
+                      <span className="text-xs bg-blue-50 text-blue-600 px-2 py-1 rounded">
+                        분석가능
+                      </span>
                       {product.url && (
                         <a
                           href={product.url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-blue-500 text-xs hover:underline"
+                          className="text-xs text-gray-400 hover:text-blue-500"
                           onClick={(e) => e.stopPropagation()}
                         >
-                          쿠팡에서 상품 보기 →
+                          쿠팡 ↗
                         </a>
                       )}
-
-                      <div className="text-xs text-gray-500">카드 클릭으로 분석하기</div>
                     </div>
                   </div>
                 </div>

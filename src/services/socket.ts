@@ -1,7 +1,8 @@
 import { io, Socket } from 'socket.io-client';
 import { SocketAnalysisData } from '../types';
+import { getWebSocketUrl } from '../utils/apiConfig';
 
-const WS_URL = process.env.REACT_APP_WS_URL || "wss://kosa-backend-879200699978.asia-northeast3.run.app";
+const WS_URL = getWebSocketUrl();
 
 class SocketService {
   private socket: Socket | null = null;
@@ -11,6 +12,11 @@ class SocketService {
       this.socket = io(WS_URL, { 
         transports: ["websocket"],
         autoConnect: true,
+        forceNew: true,
+        reconnection: true,
+        reconnectionAttempts: 5,
+        reconnectionDelay: 1000,
+        timeout: 20000,
       });
 
       this.socket.on('connect', () => {

@@ -234,3 +234,21 @@ export interface InterestAnalysisStatus {
   estimatedTime?: number;
   error?: string;
 }
+
+// 검색 관련 타입
+export interface SearchStatus {
+  status: 'started' | 'completed' | 'error';
+  message: string;
+  jobId: string;
+  keyword: string;
+  products?: any[];
+  productCount?: number;
+  error?: string;
+}
+
+// 글로벌 Window 타입 확장
+declare global {
+  interface Window {
+    searchStatusCallback?: (status: SearchStatus) => void;
+  }
+}

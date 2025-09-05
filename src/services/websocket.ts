@@ -19,6 +19,8 @@ export class WebSocketService {
       reconnectionAttempts: 5,
       reconnectionDelay: 1000,
       timeout: 20000,
+      forceNew: true,
+      autoConnect: true,
     });
 
     this.socket.on('connect', () => {
