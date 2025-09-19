@@ -1,0 +1,28 @@
+# pod-template.yaml
+
+apiVersion: v1
+kind: Pod
+spec:
+  # EKS 클러스터에 정의된 서비스 계정
+  serviceAccountName: jenkins-agent
+
+  containers:
+  # Node.js 빌드를 위한 컨테이너
+  - name: node
+    image: node:18-slim
+    command: ["sleep"]
+    args: ["infinity"]
+
+  # Docker 이미지 빌드 및 푸시를 위한 Podman 컨테이너
+  - name: podman
+    image: quay.io/podman/stable
+    command: ["sleep"]
+    args: ["infinity"]
+    securityContext:
+      privileged: true
+
+  # AWS ECR 로그인 등을 위한 AWS CLI 컨테이너
+  - name: aws-cli
+    image: amazon/aws-cli:latest
+    command: ["sleep"]
+    args: ["infinity"]
