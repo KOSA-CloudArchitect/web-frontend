@@ -41,7 +41,7 @@ pipeline {
                 dir('front-next') {
                     container('node') {
                         echo "Running clean install and build for front-next..."
-                        sh 'npm ci'
+                        sh 'npm install'
                         sh 'npm run build'
                     }
                 }
