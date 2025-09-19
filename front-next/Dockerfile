@@ -10,7 +10,7 @@ WORKDIR /app
 COPY package*.json ./
 
 # 의존성 설치 (개발 의존성도 포함하여 빌드)
-RUN npm ci --legacy-peer-deps --silent
+RUN npm install --legacy-peer-deps --silent
 
 # 소스 코드 복사
 COPY . .
