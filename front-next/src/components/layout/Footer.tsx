@@ -58,7 +58,7 @@ export const Footer: React.FC<FooterProps> = ({ className = '' }) => {
               </li>
               <li>
                 <Link 
-                  href="/analysis" 
+                  href="/search" 
                   className="text-gray-600 hover:text-blue-600 transition-colors"
                 >
                   리뷰 분석
@@ -66,7 +66,7 @@ export const Footer: React.FC<FooterProps> = ({ className = '' }) => {
               </li>
               <li>
                 <Link 
-                  href="/watchlist" 
+                  href="/interest" 
                   className="text-gray-600 hover:text-blue-600 transition-colors"
                 >
                   관심 상품
@@ -83,27 +83,19 @@ export const Footer: React.FC<FooterProps> = ({ className = '' }) => {
             <ul className="space-y-3">
               <li>
                 <Link 
-                  href="/help" 
+                  href="/search" 
                   className="text-gray-600 hover:text-blue-600 transition-colors"
                 >
-                  도움말
+                  도움말 - 검색
                 </Link>
               </li>
               <li>
-                <Link 
-                  href="/faq" 
-                  className="text-gray-600 hover:text-blue-600 transition-colors"
-                >
-                  자주 묻는 질문
-                </Link>
-              </li>
-              <li>
-                <Link 
-                  href="/contact" 
+                <a
+                  href="mailto:contact@kosa.com"
                   className="text-gray-600 hover:text-blue-600 transition-colors"
                 >
                   문의하기
-                </Link>
+                </a>
               </li>
               <li>
                 <a
@@ -127,18 +119,18 @@ export const Footer: React.FC<FooterProps> = ({ className = '' }) => {
               © {currentYear} KOSA. All rights reserved.
             </div>
             <div className="flex space-x-6 mt-4 md:mt-0">
-              <Link 
-                href="/privacy" 
+              <a 
+                href="mailto:contact@kosa.com" 
                 className="text-gray-500 hover:text-gray-700 text-sm transition-colors"
               >
                 개인정보처리방침
-              </Link>
-              <Link 
-                href="/terms" 
+              </a>
+              <a 
+                href="mailto:contact@kosa.com" 
                 className="text-gray-500 hover:text-gray-700 text-sm transition-colors"
               >
                 이용약관
-              </Link>
+              </a>
             </div>
           </div>
         </div>

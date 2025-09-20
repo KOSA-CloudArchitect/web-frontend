@@ -78,56 +78,67 @@ export class WebSocketService {
     };
   }
 
-  // 실시간 분석 이벤트 구독
+  // 실시간 분석 이벤트 구독 (백엔드 이벤트명에 맞게 수정)
   subscribeToRealtimeAnalysis(
     productId: string,
     callbacks: {
       onStatusUpdate?: (data: any) => void;
       onEmotionCard?: (data: any) => void;
-      onChartUpdate?: (data: any) => void;
       onComplete?: (data: any) => void;
       onError?: (data: any) => void;
-    }
+    },
+    taskId?: string
   ): () => void {
     const socket = this.connect();
     
-    // 각 이벤트 타입별 구독
-    if (callbacks.onStatusUpdate) {
-      socket.on(`analysis:status:${productId}`, callbacks.onStatusUpdate);
+    // 상품별 룸에 참여
+    socket.emit('join-product-room', productId);
+    
+    // taskId가 있으면 분석 룸에도 참여
+    if (taskId) {
+      socket.emit('subscribe-analysis', taskId);
     }
     
+    // 백엔드에서 전송하는 실제 이벤트명으로 구독
     if (callbacks.onEmotionCard) {
-      socket.on(`analysis:emotion:${productId}`, callbacks.onEmotionCard);
-    }
-    
-    if (callbacks.onChartUpdate) {
-      socket.on(`analysis:chart:${productId}`, callbacks.onChartUpdate);
+      socket.on('realtime-emotion-card', callbacks.onEmotionCard);
+      socket.on('emotion-card-new', callbacks.onEmotionCard); // 추가 이벤트
     }
     
     if (callbacks.onComplete) {
-      socket.on(`analysis:complete:${productId}`, callbacks.onComplete);
+      socket.on('realtime-final-summary', callbacks.onComplete);
+      socket.on('analysis-completed', callbacks.onComplete); // 추가 이벤트
     }
     
     if (callbacks.onError) {
-      socket.on(`analysis:error:${productId}`, callbacks.onError);
+      socket.on('analysis-error', callbacks.onError);
+    }
+    
+    if (callbacks.onStatusUpdate) {
+      socket.on('analysis-update', callbacks.onStatusUpdate); // 일반 분석 업데이트
     }
     
     // 구독 해제 함수 반환
     return () => {
-      if (callbacks.onStatusUpdate) {
-        socket.off(`analysis:status:${productId}`, callbacks.onStatusUpdate);
-      }
       if (callbacks.onEmotionCard) {
-        socket.off(`analysis:emotion:${productId}`, callbacks.onEmotionCard);
-      }
-      if (callbacks.onChartUpdate) {
-        socket.off(`analysis:chart:${productId}`, callbacks.onChartUpdate);
+        socket.off('realtime-emotion-card', callbacks.onEmotionCard);
+        socket.off('emotion-card-new', callbacks.onEmotionCard);
       }
       if (callbacks.onComplete) {
-        socket.off(`analysis:complete:${productId}`, callbacks.onComplete);
+        socket.off('realtime-final-summary', callbacks.onComplete);
+        socket.off('analysis-completed', callbacks.onComplete);
       }
       if (callbacks.onError) {
-        socket.off(`analysis:error:${productId}`, callbacks.onError);
+        socket.off('analysis-error', callbacks.onError);
+      }
+      if (callbacks.onStatusUpdate) {
+        socket.off('analysis-update', callbacks.onStatusUpdate);
+      }
+      
+      // 룸에서 나가기
+      socket.emit('leave-room', `product:${productId}`);
+      if (taskId) {
+        socket.emit('leave-room', `analysis:${taskId}`);
       }
     };
   }

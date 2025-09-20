@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Play, Square, RotateCcw, Wifi, WifiOff, ArrowLeft, AlertTriangle, CheckCircle } from 'lucide-react';
+import { Play, Square, RotateCcw, Wifi, WifiOff, ArrowLeft, AlertTriangle, CheckCircle, Star, Heart, ExternalLink } from 'lucide-react';
 import { RealtimeEmotionCards } from '../../../../components/RealtimeEmotionCards';
 import { RealtimeAnalysisChart } from '../../../../components/RealtimeAnalysisChart';
 import { RealtimeProgressIndicator } from '../../../../components/RealtimeProgressIndicator';
@@ -13,6 +13,19 @@ import NavBar from '../../../../components/NavBar';
 import BottomBar from '../../../../components/BottomBar';
 import Link from 'next/link';
 import { apiService } from '../../../../services/api';
+import { HeartButton } from '../../../../components/HeartButton';
+
+interface ProductInfo {
+  id: string;
+  name: string;
+  price: number;
+  originalPrice?: number;
+  rating: number;
+  reviewCount: number;
+  imageUrl: string;
+  category?: string;
+  url?: string;
+}
 
 export default function RealtimeAnalysisPage() {
   const params = useParams();
@@ -22,6 +35,8 @@ export default function RealtimeAnalysisPage() {
   const [showCompletionToast, setShowCompletionToast] = useState(false);
   const [startingAnalysis, setStartingAnalysis] = useState(false);
   const [showFinalSummary, setShowFinalSummary] = useState(false);
+  const [productInfo, setProductInfo] = useState<ProductInfo | null>(null);
+  const [loadingProduct, setLoadingProduct] = useState(true);
   
   const { 
     connection,
@@ -38,6 +53,62 @@ export default function RealtimeAnalysisPage() {
     autoConnect: true
   });
 
+  // 상품 정보 가져오기
+  useEffect(() => {
+    const fetchProductInfo = async () => {
+      if (!productId) return;
+      
+      try {
+        setLoadingProduct(true);
+        
+        // 먼저 캐시된 상품 정보를 확인
+        const response = await apiService.get(`/api/products?q=${encodeURIComponent(productId)}&page=1&page_size=1`);
+        
+        if (response.success && response.data?.products?.length > 0) {
+          const product = response.data.products[0];
+          setProductInfo({
+            id: product.id || productId,
+            name: product.name || `상품 ${productId}`,
+            price: product.price || 0,
+            originalPrice: product.original_price,
+            rating: product.rating || 0,
+            reviewCount: product.review_count || 0,
+            imageUrl: product.image_url || '/placeholder-product.png',
+            category: product.category || '전자제품',
+            url: product.url
+          });
+        } else {
+          // 기본 상품 정보
+          setProductInfo({
+            id: productId,
+            name: `상품 ${productId}`,
+            price: 0,
+            rating: 0,
+            reviewCount: 0,
+            imageUrl: '/placeholder-product.png',
+            category: '전자제품'
+          });
+        }
+      } catch (error) {
+        console.error('상품 정보 가져오기 실패:', error);
+        // 기본 상품 정보
+        setProductInfo({
+          id: productId,
+          name: `상품 ${productId}`,
+          price: 0,
+          rating: 0,
+          reviewCount: 0,
+          imageUrl: '/placeholder-product.png',
+          category: '전자제품'
+        });
+      } finally {
+        setLoadingProduct(false);
+      }
+    };
+
+    fetchProductInfo();
+  }, [productId]);
+
   // 분석 시작 함수
   const handleStartAnalysis = async () => {
     if (startingAnalysis) return;
@@ -51,7 +122,7 @@ export default function RealtimeAnalysisPage() {
       // 분석 요청 API 호출
       const response = await apiService.post('/api/analyze', {
         product_id: productId,
-        url: `https://example.com/product/${productId}`, // 실제 상품 URL로 변경 필요
+        url: productInfo?.url || `https://www.coupang.com/products/${productId}`,
         job_id: jobId,
         review_cnt: 0, // 초기값
         source: 'realtime_page'
@@ -68,6 +139,45 @@ export default function RealtimeAnalysisPage() {
     } finally {
       setStartingAnalysis(false);
     }
+  };
+
+  // 가격 포맷팅
+  const formatPrice = (price: number): string => {
+    return new Intl.NumberFormat('ko-KR').format(price);
+  };
+
+  // 할인율 계산
+  const getDiscountRate = (originalPrice: number, currentPrice: number): number => {
+    return Math.round(((originalPrice - currentPrice) / originalPrice) * 100);
+  };
+
+  // 별점 렌더링
+  const renderStars = (rating: number) => {
+    const stars = [];
+    const fullStars = Math.floor(rating);
+    const hasHalfStar = rating % 1 !== 0;
+
+    for (let i = 0; i < fullStars; i++) {
+      stars.push(<Star key={i} className="w-4 h-4 fill-yellow-400 text-yellow-400" />);
+    }
+
+    if (hasHalfStar) {
+      stars.push(
+        <div key="half" className="relative">
+          <Star className="w-4 h-4 text-gray-300" />
+          <div className="absolute inset-0 overflow-hidden w-1/2">
+            <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+          </div>
+        </div>
+      );
+    }
+
+    const remainingStars = 5 - Math.ceil(rating);
+    for (let i = 0; i < remainingStars; i++) {
+      stars.push(<Star key={`empty-${i}`} className="w-4 h-4 text-gray-300" />);
+    }
+
+    return stars;
   };
 
   // 분석 중지
@@ -138,6 +248,130 @@ export default function RealtimeAnalysisPage() {
               상품 ID: {productId} | 실시간으로 리뷰를 분석하고 감정 카드를 생성합니다.
             </p>
           </div>
+
+          {/* 상품 정보 섹션 */}
+          {loadingProduct ? (
+            <motion.div 
+              className="bg-white rounded-xl shadow-lg p-6 mb-6"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+            >
+              <div className="flex flex-col md:flex-row gap-6">
+                <div className="w-full md:w-48 h-48 bg-gray-200 rounded-lg animate-pulse"></div>
+                <div className="flex-1 space-y-4">
+                  <div className="h-6 bg-gray-200 rounded animate-pulse"></div>
+                  <div className="h-4 bg-gray-200 rounded w-3/4 animate-pulse"></div>
+                  <div className="h-4 bg-gray-200 rounded w-1/2 animate-pulse"></div>
+                  <div className="h-8 bg-gray-200 rounded w-1/4 animate-pulse"></div>
+                </div>
+              </div>
+            </motion.div>
+          ) : productInfo && (
+            <motion.div 
+              className="bg-white rounded-xl shadow-lg p-6 mb-6"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+            >
+              <div className="flex flex-col md:flex-row gap-6">
+                {/* 상품 이미지 */}
+                <div className="w-full md:w-48 h-48 flex-shrink-0">
+                  <img
+                    src={productInfo.imageUrl}
+                    alt={productInfo.name}
+                    className="w-full h-full object-cover rounded-lg bg-gray-50"
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      target.src = '/placeholder-product.png';
+                    }}
+                  />
+                </div>
+
+                {/* 상품 정보 */}
+                <div className="flex-1 space-y-4">
+                  {/* 카테고리 */}
+                  {productInfo.category && (
+                    <span className="inline-block text-xs text-blue-600 bg-blue-100 px-2 py-1 rounded">
+                      {productInfo.category}
+                    </span>
+                  )}
+
+                  {/* 상품명 */}
+                  <h2 className="text-xl font-bold text-gray-900 line-clamp-2">
+                    {productInfo.name}
+                  </h2>
+
+                  {/* 평점 및 리뷰 수 */}
+                  {productInfo.rating > 0 && (
+                    <div className="flex items-center gap-2">
+                      <div className="flex items-center">
+                        {renderStars(productInfo.rating)}
+                      </div>
+                      <span className="text-sm font-medium text-gray-700">
+                        {productInfo.rating.toFixed(1)}
+                      </span>
+                      <span className="text-sm text-gray-500">
+                        ({productInfo.reviewCount.toLocaleString()}개 상품평)
+                      </span>
+                    </div>
+                  )}
+
+                  {/* 가격 정보 */}
+                  <div className="space-y-2">
+                    {productInfo.originalPrice && productInfo.originalPrice > productInfo.price && (
+                      <div className="flex items-center gap-2">
+                        <span className="text-red-500 font-bold text-sm bg-red-100 px-2 py-1 rounded">
+                          {getDiscountRate(productInfo.originalPrice, productInfo.price)}% 할인
+                        </span>
+                        <span className="text-gray-400 line-through text-sm">
+                          {formatPrice(productInfo.originalPrice)}원
+                        </span>
+                      </div>
+                    )}
+                    <div className="text-2xl font-bold text-gray-900">
+                      {formatPrice(productInfo.price)}원
+                    </div>
+                    {productInfo.price > 0 && (
+                      <div className="text-sm text-blue-600">무료배송</div>
+                    )}
+                  </div>
+
+                  {/* 액션 버튼들 */}
+                  <div className="flex flex-wrap gap-3 pt-2">
+                    {/* 관심상품 등록 */}
+                    <div className="flex-shrink-0">
+                      <HeartButton 
+                        product={{
+                          id: productInfo.id,
+                          name: productInfo.name,
+                          url: productInfo.url || `https://www.coupang.com/products/${productInfo.id}`,
+                          image_url: productInfo.imageUrl,
+                          price: productInfo.price,
+                          rating: productInfo.rating,
+                          review_count: productInfo.reviewCount
+                        }} 
+                        size="md" 
+                      />
+                    </div>
+
+                    {/* 구매하러 가기 */}
+                    {productInfo.url && (
+                      <a
+                        href={productInfo.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+                      >
+                        <ExternalLink className="w-4 h-4" />
+                        구매하러 가기
+                      </a>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          )}
 
           {/* 에러 표시 */}
           {hasError && (

@@ -44,12 +44,18 @@ export const getWebSocketUrl = () => {
     return wsUrl;
   }
   
-  // 런타임 환경변수가 없으면 기본값 사용: 백엔드 서버로 직접 연결
-  const isHttps = typeof window !== 'undefined' && window.location.protocol === 'https:';
-  const scheme = isHttps ? 'wss' : 'ws';
-  // 로컬 개발 환경에서는 백엔드 서버(3001)로 직접 연결
-  const defaultUrl = `${scheme}://localhost:3001`;
-  console.log('⚠️ Using default WS_URL (backend server):', defaultUrl);
+  // 런타임 환경변수가 없으면 기본값 사용: 현재 도메인 사용
+  if (typeof window !== 'undefined') {
+    const isHttps = window.location.protocol === 'https:';
+    const scheme = isHttps ? 'wss' : 'ws';
+    const defaultUrl = `${scheme}://${window.location.host}`;
+    console.log('⚠️ Using default WS_URL (current host):', defaultUrl);
+    return defaultUrl;
+  }
+  
+  // 서버사이드 렌더링시 기본값
+  const defaultUrl = '';
+  console.log('⚠️ Using default WS_URL (SSR fallback):', defaultUrl);
   return defaultUrl;
 };
 
