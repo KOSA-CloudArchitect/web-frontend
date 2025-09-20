@@ -47,8 +47,8 @@ pipeline {
                 }
                 container('podman') {
                     echo "Verifying Docker build for front-next..."
-                    // 빌드 컨텍스트와 Dockerfile 경로를 'front-next'로 지정
-                    sh "podman build -t frontend-build-test -f front-next/Dockerfile ."
+                    // 빌드 컨텍스트를 최상위 경로(.)가 아닌 'front-next' 폴더로 지정합니다.
+                    sh "podman build -t frontend-build-test -f front-next/Dockerfile front-next"
                 }
             }
         }
@@ -77,7 +77,7 @@ pipeline {
                     container('podman') {
                         sh "echo '${ecrPassword}' | podman login --username AWS --password-stdin ${ECR_REGISTRY}"
                         // 빌드 컨텍스트와 Dockerfile 경로를 'front-next'로 지정
-                        sh "podman build -t ${FULL_IMAGE_NAME} -f front-next/Dockerfile ."
+                        sh "podman build -t ${FULL_IMAGE_NAME} -f front-next/Dockerfile front-next"
                         sh "podman push ${FULL_IMAGE_NAME}"
                     }
                     echo "Successfully pushed image: ${FULL_IMAGE_NAME}"
