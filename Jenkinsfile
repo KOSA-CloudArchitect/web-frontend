@@ -1,4 +1,4 @@
-// Jenkinsfile bulid test2
+// Jenkinsfile (최종 수정 완료)
 
 pipeline {
     agent {
@@ -37,17 +37,15 @@ pipeline {
                 }
             }
             steps {
-                // 'front-next' 폴더로 이동하여 빌드 수행
                 dir('front-next') {
                     container('node') {
-                        echo "Running clean install and build for front-next..."
+                        echo "Running install and build for front-next..."
                         sh 'npm install --legacy-peer-deps'
                         sh 'npm run build'
                     }
                 }
                 container('podman') {
                     echo "Verifying Docker build for front-next..."
-                    // 빌드 컨텍스트를 최상위 경로(.)가 아닌 'front-next' 폴더로 지정합니다.
                     sh "podman build -t frontend-build-test -f front-next/Dockerfile front-next"
                 }
             }
@@ -60,10 +58,10 @@ pipeline {
                 script {
                     env.FULL_IMAGE_NAME    = "${ECR_REGISTRY}/${ECR_REPOSITORY}:${COMMIT_HASH}"
 
-                    // main 브랜치에서도 빌드는 필요
                     dir('front-next') {
                         container('node') {
-                            sh 'npm ci'
+                            // 👇 main 브랜치의 빌드 명령어도 동일하게 수정
+                            sh 'npm install --legacy-peer-deps'
                             sh 'npm run build'
                         }
                     }
@@ -76,7 +74,6 @@ pipeline {
 
                     container('podman') {
                         sh "echo '${ecrPassword}' | podman login --username AWS --password-stdin ${ECR_REGISTRY}"
-                        // 빌드 컨텍스트와 Dockerfile 경로를 'front-next'로 지정
                         sh "podman build -t ${FULL_IMAGE_NAME} -f front-next/Dockerfile front-next"
                         sh "podman push ${FULL_IMAGE_NAME}"
                     }
@@ -99,11 +96,7 @@ pipeline {
                         git config user.email "jenkins-ci@example.com"
                         git config user.name "Jenkins CI"
                         
-                        # Kustomization 파일에서 frontend 이미지의 태그를 업데이트
                         KUSTOMIZE_FILE="kubernetes/namespaces/web-tier,cache-tier/04-applications/kustomization.yaml"
-                        
-                        # sed 명령어를 사용하여 frontend-placeholder 이미지의 newTag 값을 변경
-                        # 이미지 이름(newName)을 기준으로 정확한 라인을 찾아 수정
                         sed -i "/name: frontend-placeholder/,/newTag/ s/newTag: .*/newTag: ${COMMIT_HASH}/" ${KUSTOMIZE_FILE}
                         
                         git add ${KUSTOMIZE_FILE}
