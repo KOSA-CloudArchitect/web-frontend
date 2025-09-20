@@ -125,5 +125,5 @@ Thumbs.db
 **/*.spec.tsx
 
 # Lock files (choose one)
-package-lock.json
+#package-lock.json   mina 에 파일이 없어 일단 주석 처리
 yarn.lock
