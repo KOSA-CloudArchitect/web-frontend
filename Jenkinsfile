@@ -1,4 +1,4 @@
-// Jenkinsfile (Final Version for Frontend Monorepo)
+// Jenkinsfile bulid test
 
 pipeline {
     agent {
