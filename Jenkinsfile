@@ -41,7 +41,7 @@ pipeline {
                 dir('front-next') {
                     container('node') {
                         echo "Running clean install and build for front-next..."
-                        sh 'npm install'
+                        sh 'npm install --legacy-peer-deps'
                         sh 'npm run build'
                     }
                 }
