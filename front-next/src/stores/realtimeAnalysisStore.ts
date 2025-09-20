@@ -2,12 +2,23 @@ import { create } from 'zustand';
 
 export interface EmotionCard {
   id: string;
-  sentiment: 'positive' | 'negative' | 'neutral';
-  content: string;
-  keywords: string[];
-  confidence: number;
+  sentiment: 'pos' | 'neg' | 'neu';  // 백엔드 형식에 맞게 수정
+  summary: string;  // content -> summary로 변경
+  keywords: Array<{ key: string; count: number }>;  // 백엔드 형식에 맞게 수정
+  score: number;  // confidence -> score로 변경
   timestamp: string;
-  color: string;
+  color?: string;  // 옵셔널로 변경 (프론트에서 계산)
+  // 백엔드 추가 필드들
+  cardId?: string;
+  productId?: string;
+  taskId?: string;
+  refs?: {
+    reviewId?: string;
+    index?: number;
+    batchIndex?: number;
+    jobId?: string;
+    url?: string;
+  };
 }
 
 export interface AnalysisChart {
@@ -32,8 +43,8 @@ export interface RealtimeAnalysisState {
 
   // 분석 진행 상태
   currentStage: string;
-  progress: number;
   isCompleted: boolean;
+  progress: number;
 
   // 감정 카드 리스트
   emotionCards: EmotionCard[];
@@ -50,8 +61,8 @@ export interface RealtimeAnalysisState {
   // 액션들
   setConnectionStatus: (connected: boolean) => void;
   setCurrentStage: (stage: string) => void;
-  setProgress: (progress: number) => void;
   setCompleted: (completed: boolean) => void;
+  setProgress: (progress: number) => void;
   addEmotionCard: (card: EmotionCard) => void;
   updateAnalysisChart: (chart: AnalysisChart) => void;
   setAnalysisSummary: (summary: AnalysisSummary) => void;
@@ -63,8 +74,8 @@ export interface RealtimeAnalysisState {
 const initialState = {
   isConnected: false,
   currentStage: '대기 중',
-  progress: 0,
   isCompleted: false,
+  progress: 0,
   emotionCards: [],
   analysisChart: {
     positive: 0,
@@ -83,9 +94,9 @@ export const useRealtimeAnalysisStore = create<RealtimeAnalysisState>((set, get)
 
   setCurrentStage: (stage) => set({ currentStage: stage }),
 
-  setProgress: (progress) => set({ progress: Math.max(0, Math.min(100, progress)) }),
-
   setCompleted: (completed) => set({ isCompleted: completed }),
+
+  setProgress: (progress) => set({ progress }),
 
   addEmotionCard: (card) => set((state) => ({
     emotionCards: [card, ...state.emotionCards].slice(0, 50) // 최대 50개까지만 유지
@@ -105,17 +116,17 @@ export const useRealtimeAnalysisStore = create<RealtimeAnalysisState>((set, get)
 // 성능 최적화를 위한 selector 함수들
 export const useConnectionStatus = () => useRealtimeAnalysisStore((state) => state.isConnected);
 export const useCurrentStage = () => useRealtimeAnalysisStore((state) => state.currentStage);
-export const useProgress = () => useRealtimeAnalysisStore((state) => state.progress);
 export const useIsCompleted = () => useRealtimeAnalysisStore((state) => state.isCompleted);
+export const useProgress = () => useRealtimeAnalysisStore((state) => state.progress);
 export const useEmotionCards = () => useRealtimeAnalysisStore((state) => state.emotionCards);
 export const useAnalysisChart = () => useRealtimeAnalysisStore((state) => state.analysisChart);
 export const useAnalysisSummary = () => useRealtimeAnalysisStore((state) => state.analysisSummary);
 export const useRealtimeError = () => useRealtimeAnalysisStore((state) => state.error);
+
 // 액션들을 개별적으로 export하여 무한 루프 방지
 export const useRealtimeActions = () => {
   const setConnectionStatus = useRealtimeAnalysisStore((state) => state.setConnectionStatus);
   const setCurrentStage = useRealtimeAnalysisStore((state) => state.setCurrentStage);
-  const setProgress = useRealtimeAnalysisStore((state) => state.setProgress);
   const setCompleted = useRealtimeAnalysisStore((state) => state.setCompleted);
   const addEmotionCard = useRealtimeAnalysisStore((state) => state.addEmotionCard);
   const updateAnalysisChart = useRealtimeAnalysisStore((state) => state.updateAnalysisChart);
@@ -127,7 +138,6 @@ export const useRealtimeActions = () => {
   return {
     setConnectionStatus,
     setCurrentStage,
-    setProgress,
     setCompleted,
     addEmotionCard,
     updateAnalysisChart,

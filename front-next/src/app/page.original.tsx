@@ -2,11 +2,10 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { TrendingUp, ChevronDown, ChevronUp, ShoppingCart, Search } from "lucide-react";
+import { TrendingUp, ChevronDown, ChevronUp, ShoppingCart } from "lucide-react";
 import { Layout } from "../components/layout/Layout";
 import { SearchBar } from "../components/search/SearchBar";
 import { Card } from "../components/common/Card";
-import PlayioHeroSection from "../components/PlayioHeroSection";
 
 // 타입 정의
 interface SearchSuggestion {
@@ -85,8 +84,6 @@ const renderStars = (rating: number) => {
 
 const Page: React.FC = () => {
   const router = useRouter();
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [isSearching, setIsSearching] = useState(false);
 
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const [popularSearches] = useState<SearchSuggestion[]>([
@@ -352,161 +349,184 @@ const Page: React.FC = () => {
 
   return (
     <Layout>
-      <div className="scroll-container">
-        {/* 3D 모바일 히어로 섹션 */}
-        <section data-section="0" className="scroll-section">
-          <PlayioHeroSection onSearch={handleSearch} />
-        </section>
+      {/* 히어로 섹션 */}
+      <section
+        className="relative flex items-center justify-center overflow-hidden"
+        style={{
+          background: `
+            radial-gradient(ellipse at 20% 20%, rgba(236, 253, 245, 0.8) 0%, transparent 50%),
+            radial-gradient(ellipse at 80% 20%, rgba(254, 242, 242, 0.8) 0%, transparent 50%),
+            radial-gradient(ellipse at 80% 80%, rgba(250, 245, 255, 0.6) 0%, transparent 50%),
+            linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.8) 100%)
+          `,
+          minHeight: "60vh",
+        }}
+      >
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <div className="mb-16 pt-20">
+            <h1 className="text-5xl md:text-6xl font-bold text-gray-800 mb-8 leading-tight">
+              원하시는 상품에 대한 리뷰를
+              <br />
+              분석해 드립니다.
+            </h1>
+            <p className="text-xl text-gray-700 mb-16 max-w-2xl mx-auto">
+              상품명을 검색하여 AI가 분석한 리뷰 요약을 확인하세요
+            </p>
+          </div>
 
-        {/* 기존 히어로 섹션 */}
-        <section
-          data-section="1"
-          className="scroll-section relative flex items-center justify-center overflow-hidden"
-          style={{
-            background: `
-              radial-gradient(ellipse at 20% 20%, rgba(236, 253, 245, 0.8) 0%, transparent 50%),
-              radial-gradient(ellipse at 80% 20%, rgba(254, 242, 242, 0.8) 0%, transparent 50%),
-              radial-gradient(ellipse at 80% 80%, rgba(250, 245, 255, 0.6) 0%, transparent 50%),
-              linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.8) 100%)
-            `,
-            minHeight: "100vh",
-          }}
-        >
-          <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-            <div className="mb-16 pt-20">
-              <h1 className="text-5xl md:text-6xl font-bold text-gray-800 mb-8 leading-tight">
-                원하시는 상품에 대한 리뷰를
-                <br />
-                분석해 드립니다.
-              </h1>
-              <p className="text-xl text-gray-700 mb-16 max-w-2xl mx-auto">
-                상품명을 검색하여 AI가 분석한 리뷰 요약을 확인하세요
-              </p>
+          {/* 검색 바 */}
+          <div className="max-w-2xl mx-auto mb-16">
+            <SearchBar
+              onSearch={handleSearch}
+              onSuggestionSelect={handleSuggestionSelect}
+              isLoading={false}
+              suggestions={popularSearches}
+              recentSearches={recentSearches}
+              placeholder="상품명을 검색해보세요"
+            />
+            <div className="text-center mt-4">
+              <p className="text-sm text-gray-500">예: 아이폰 15, 다이슨 청소거, 맥북 에어 등</p>
             </div>
+          </div>
 
-            {/* 검색 바 */}
-            <div className="max-w-2xl mx-auto mb-16">
-              <SearchBar
-                onSearch={handleSearch}
-                onSuggestionSelect={handleSuggestionSelect}
-                isLoading={isSearching}
-                suggestions={popularSearches}
-                recentSearches={recentSearches}
-                placeholder="상품명을 검색해보세요"
-              />
-              <div className="text-center mt-4">
-                <p className="text-sm text-gray-500">예: 아이폰 15, 다이슨 청소기, 맥북 에어 등</p>
+          {/* 리뷰 카드 마키 효과 */}
+          <div className="overflow-hidden py-8 mb-16">
+            <style>{`
+              @keyframes scroll-left {
+                from { transform: translateX(0); }
+                to { transform: translateX(-50%); }
+              }
+              .reviews-slider {
+                display: flex; gap: 1.5rem; width: max-content;
+                animation: scroll-left 30s linear infinite;
+              }
+              .review-card {
+                flex: 0 0 auto; background: white; border-radius: 16px;
+                padding: 1.5rem 1.8rem; min-width: 320px; max-width: 320px;
+                box-shadow: 0 4px 24px rgba(0,0,0,0.04), 0 1px 8px rgba(0,0,0,0.02);
+                border: 1px solid rgba(0,0,0,0.03);
+              }
+            `}</style>
+
+            <div className="reviews-slider">
+              {/* 세트 1 */}
+              <div className="review-card">
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="text-yellow-400">⭐⭐⭐⭐</span>
+                  <span className="text-sm font-medium text-gray-700">4.2</span>
+                </div>
+                <p className="text-gray-800 text-sm leading-relaxed mb-3 line-clamp-4">
+                  "가성비는 좋은데 배송이 조금 늦었어요. 제품 자체는 만족합니다. 특히 무선이라 편리하고 충전도 오래가서 좋네요!"
+                </p>
+                <div className="text-xs text-gray-500">이○○ 님 · LG 코드제로</div>
               </div>
-            </div>
 
-            {/* 리뷰 카드 마키 효과 */}
-            <div className="overflow-hidden py-8 mb-16">
-              <style>{`
-                @keyframes scroll-left {
-                  from { transform: translateX(0); }
-                  to { transform: translateX(-50%); }
-                }
-                .reviews-slider {
-                  display: flex;
-                  gap: 1.5rem;
-                  width: max-content;
-                  animation: scroll-left 20s linear infinite;
-                }
-                .review-card {
-                  flex: 0 0 auto;
-                  background: white;
-                  border-radius: 16px;
-                  padding: 1.5rem;
-                  min-width: 300px;
-                  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-                  border: 1px solid rgba(0, 0, 0, 0.05);
-                }
-              `}</style>
-              
-              <div className="reviews-slider">
-                {/* 리뷰 카드들 */}
-                <div className="review-card">
-                  <div className="flex items-center mb-3">
-                    <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mr-3">
-                      <span className="text-blue-600 text-sm font-bold">김○○</span>
-                    </div>
-                    <div className="flex text-yellow-400">
-                      ⭐⭐⭐⭐⭐
-                    </div>
-                  </div>
-                  <p className="text-gray-700 text-sm leading-relaxed">
-                    "정말 만족합니다! 예상보다 훨씬 좋은 품질이고 배송도 빨랐어요. 강력 추천!"
-                  </p>
-                  <p className="text-xs text-gray-500 mt-2">아이폰 15 Pro</p>
+              <div className="review-card">
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="text-yellow-400">⭐⭐⭐⭐⭐</span>
+                  <span className="text-sm font-medium text-gray-700">4.9</span>
                 </div>
+                <p className="text-gray-800 text-sm leading-relaxed mb-3 line-clamp-4">
+                  "진짜 대박이에요! 반려동물 털까지 깨끗하게 흡입되고, 계단 청소할 때도 가볍고 편해요. 강추합니다!"
+                </p>
+                <div className="text-xs text-gray-500">박○○ 님 · 샤오미 무선청소기</div>
+              </div>
 
-                <div className="review-card">
-                  <div className="flex items-center mb-3">
-                    <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center mr-3">
-                      <span className="text-green-600 text-sm font-bold">박○○</span>
-                    </div>
-                    <div className="flex text-yellow-400">
-                      ⭐⭐⭐⭐
-                    </div>
-                  </div>
-                  <p className="text-gray-700 text-sm leading-relaxed">
-                    "가성비가 정말 좋네요. 몇 달 사용해봤는데 아직까지 문제없이 잘 작동합니다."
-                  </p>
-                  <p className="text-xs text-gray-500 mt-2">다이슨 청소기</p>
+              <div className="review-card">
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="text-yellow-400">⭐⭐⭐</span>
+                  <span className="text-sm font-medium text-gray-700">3.5</span>
                 </div>
+                <p className="text-gray-800 text-sm leading-relaxed mb-3 line-clamp-4">
+                  "흡입력은 괜찮은데 소음이 좀 크네요. 그래도 가격 대비 나쁘지 않습니다. 필터 관리만 잘하면 오래 쓸 것 같아요."
+                </p>
+                <div className="text-xs text-gray-500">최○○ 님 · 일렉트로룩스</div>
+              </div>
 
-                <div className="review-card">
-                  <div className="flex items-center mb-3">
-                    <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center mr-3">
-                      <span className="text-purple-600 text-sm font-bold">이○○</span>
-                    </div>
-                    <div className="flex text-yellow-400">
-                      ⭐⭐⭐⭐⭐
-                    </div>
-                  </div>
-                  <p className="text-gray-700 text-sm leading-relaxed">
-                    "디자인도 예쁘고 성능도 뛰어나요. 업무용으로 사용하기에 완벽합니다!"
-                  </p>
-                  <p className="text-xs text-gray-500 mt-2">맥북 에어</p>
+              <div className="review-card">
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="text-yellow-400">⭐⭐⭐⭐⭐</span>
+                  <span className="text-sm font-medium text-gray-700">5.0</span>
                 </div>
+                <p className="text-gray-800 text-sm leading-relaxed mb-3 line-clamp-4">
+                  "완전 만족해요! 디자인도 이쁘고 성능도 좋고, 무엇보다 A/S가 잘 되어 있어서 안심이에요. 재구매 의향 100%!"
+                </p>
+                <div className="text-xs text-gray-500">정○○ 님 · 다이슨 V12</div>
+              </div>
 
-                {/* 중복 카드들 (무한 스크롤 효과) */}
-                <div className="review-card">
-                  <div className="flex items-center mb-3">
-                    <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mr-3">
-                      <span className="text-blue-600 text-sm font-bold">김○○</span>
-                    </div>
-                    <div className="flex text-yellow-400">
-                      ⭐⭐⭐⭐⭐
-                    </div>
-                  </div>
-                  <p className="text-gray-700 text-sm leading-relaxed">
-                    "정말 만족합니다! 예상보다 훨씬 좋은 품질이고 배송도 빨랐어요. 강력 추천!"
-                  </p>
-                  <p className="text-xs text-gray-500 mt-2">아이폰 15 Pro</p>
+              <div className="review-card">
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="text-yellow-400">⭐⭐⭐⭐⭐</span>
+                  <span className="text-sm font-medium text-gray-700">4.8</span>
                 </div>
+                <p className="text-gray-800 text-sm leading-relaxed mb-3 line-clamp-4">
+                  "청소기 정말 좋아요! 흡입력도 강하고 소음도 적당해서 밤에도 사용할 수 있어요. 필터 청소도 생각보다 간단하네요. 추천합니다."
+                </p>
+                <div className="text-xs text-gray-500">김○○ 님 · 다이슨 V15</div>
+              </div>
 
-                <div className="review-card">
-                  <div className="flex items-center mb-3">
-                    <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center mr-3">
-                      <span className="text-green-600 text-sm font-bold">박○○</span>
-                    </div>
-                    <div className="flex text-yellow-400">
-                      ⭐⭐⭐⭐
-                    </div>
-                  </div>
-                  <p className="text-gray-700 text-sm leading-relaxed">
-                    "가성비가 정말 좋네요. 몇 달 사용해봤는데 아직까지 문제없이 잘 작동합니다."
-                  </p>
-                  <p className="text-xs text-gray-500 mt-2">다이슨 청소기</p>
+              {/* 세트 2 (무한 루프용 반복) */}
+              <div className="review-card">
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="text-yellow-400">⭐⭐⭐⭐</span>
+                  <span className="text-sm font-medium text-gray-700">4.2</span>
                 </div>
+                <p className="text-gray-800 text-sm leading-relaxed mb-3 line-clamp-4">
+                  "가성비는 좋은데 배송이 조금 늦었어요. 제품 자체는 만족합니다. 특히 무선이라 편리하고 충전도 오래가서 좋네요!"
+                </p>
+                <div className="text-xs text-gray-500">이○○ 님 · LG 코드제로</div>
+              </div>
+
+              <div className="review-card">
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="text-yellow-400">⭐⭐⭐⭐⭐</span>
+                  <span className="text-sm font-medium text-gray-700">4.9</span>
+                </div>
+                <p className="text-gray-800 text-sm leading-relaxed mb-3 line-clamp-4">
+                  "진짜 대박이에요! 반려동물 털까지 깨끗하게 흡입되고, 계단 청소할 때도 가볍고 편해요. 강추합니다!"
+                </p>
+                <div className="text-xs text-gray-500">박○○ 님 · 샤오미 무선청소기</div>
+              </div>
+
+              <div className="review-card">
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="text-yellow-400">⭐⭐⭐</span>
+                  <span className="text-sm font-medium text-gray-700">3.5</span>
+                </div>
+                <p className="text-gray-800 text-sm leading-relaxed mb-3 line-clamp-4">
+                  "흡입력은 괜찮은데 소음이 좀 크네요. 그래도 가격 대비 나쁘지 않습니다. 필터 관리만 잘하면 오래 쓸 것 같아요."
+                </p>
+                <div className="text-xs text-gray-500">최○○ 님 · 일렉트로룩스</div>
+              </div>
+
+              <div className="review-card">
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="text-yellow-400">⭐⭐⭐⭐⭐</span>
+                  <span className="text-sm font-medium text-gray-700">5.0</span>
+                </div>
+                <p className="text-gray-800 text-sm leading-relaxed mb-3 line-clamp-4">
+                  "완전 만족해요! 디자인도 이쁘고 성능도 좋고, 무엇보다 A/S가 잘 되어 있어서 안심이에요. 재구매 의향 100%!"
+                </p>
+                <div className="text-xs text-gray-500">정○○ 님 · 다이슨 V12</div>
+              </div>
+
+              <div className="review-card">
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="text-yellow-400">⭐⭐⭐⭐⭐</span>
+                  <span className="text-sm font-medium text-gray-700">4.8</span>
+                </div>
+                <p className="text-gray-800 text-sm leading-relaxed mb-3 line-clamp-4">
+                  "청소기 정말 좋아요! 흡입력도 강하고 소음도 적당해서 밤에도 사용할 수 있어요. 필터 청소도 생각보다 간단하네요. 추천합니다."
+                </p>
+                <div className="text-xs text-gray-500">김○○ 님 · 다이슨 V15</div>
               </div>
             </div>
           </div>
-        </section>
+        </div>
+      </section>
 
-        {/* 긴 리뷰 → AI 요약 섹션 (원본과 동일) */}
-        <section data-section="2" className="bg-white py-20 scroll-section">
+      {/* 긴 리뷰 → AI 요약 섹션 (원본과 동일) */}
+      <section className="bg-white py-20">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* 제목 */}
           <div className="text-center mb-16">
@@ -843,8 +863,8 @@ const Page: React.FC = () => {
         </div>
       </section>
 
-        {/* 급상승 키워드 랭킹 섹션 */}
-        <section data-section="3" className="py-16 bg-white scroll-section">
+      {/* 급상승 키워드 랭킹 섹션 */}
+      <section className="py-16 bg-white">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-8">
             <h2 className="text-2xl font-bold text-gray-900 mb-2 flex items-center justify-center gap-2">
@@ -1017,9 +1037,9 @@ const Page: React.FC = () => {
         </div>
       </section>
 
-        {/* 후기 많은 상품 섹션 */}
-        {recommendedProducts.length > 0 && (
-          <section data-section="4" className="py-16 bg-white scroll-section">
+      {/* 후기 많은 상품 섹션 */}
+      {recommendedProducts.length > 0 && (
+        <section className="py-16 bg-white">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex items-center justify-between mb-12">
               <div>
@@ -1086,47 +1106,9 @@ const Page: React.FC = () => {
                 );
               })}
             </div>
-          </div>
-          </section>
-        )}
-      </div>
-
-      <style jsx global>{`
-        .scroll-container {
-          scroll-snap-type: y mandatory;
-          overflow-y: scroll;
-          height: 100vh;
-        }
-        
-        .scroll-section {
-          scroll-snap-align: start;
-          min-height: 100vh;
-          position: relative;
-        }
-
-        /* 스크롤바 스타일링 */
-        .scroll-container::-webkit-scrollbar {
-          width: 8px;
-        }
-        
-        .scroll-container::-webkit-scrollbar-track {
-          background: rgba(0, 0, 0, 0.1);
-        }
-        
-        .scroll-container::-webkit-scrollbar-thumb {
-          background: rgba(0, 0, 0, 0.2);
-          border-radius: 4px;
-        }
-        
-        .scroll-container::-webkit-scrollbar-thumb:hover {
-          background: rgba(0, 0, 0, 0.3);
-        }
-
-        /* 부드러운 스크롤 */
-        html {
-          scroll-behavior: smooth;
-        }
-      `}</style>
+    </div>
+        </section>
+      )}
     </Layout>
   );
 };

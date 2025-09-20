@@ -143,6 +143,29 @@ class ApiClient {
     });
   }
 
+  // 실시간 분석 시작
+  async startRealtimeAnalysis(data: any) {
+    return this.request('/api/analyze', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  // 범용 POST 메서드 추가
+  async post<T = any>(endpoint: string, data?: any): Promise<ApiResponse<T>> {
+    return this.request<T>(endpoint, {
+      method: 'POST',
+      body: data ? JSON.stringify(data) : undefined,
+    });
+  }
+
+  // 범용 GET 메서드 추가
+  async get<T = any>(endpoint: string): Promise<ApiResponse<T>> {
+    return this.request<T>(endpoint, {
+      method: 'GET',
+    });
+  }
+
   async getAnalysisStatus(taskId: string, dagRunId?: string) {
     const params = new URLSearchParams({ taskId });
     if (dagRunId) params.append('dagRunId', dagRunId);

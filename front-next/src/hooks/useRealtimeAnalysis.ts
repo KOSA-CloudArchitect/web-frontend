@@ -27,8 +27,21 @@ export const useRealtimeAnalysis = ({ productId, autoConnect = true }: UseRealti
 
   // WebSocket URL 생성 (Socket.IO 네임스페이스 방식)
   const getWebSocketUrl = useCallback(() => {
-    const baseUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001';
-    return `${baseUrl}/ws/realtime`;
+    // 런타임 환경변수에서 WS_URL 가져오기
+    const runtimeConfig = (typeof window !== 'undefined' && window.__RUNTIME_CONFIG__) || {};
+    
+    if (runtimeConfig.WS_URL) {
+      return runtimeConfig.WS_URL;
+    }
+    
+    // 런타임 환경변수가 없으면 현재 도메인 사용
+    if (typeof window !== 'undefined') {
+      const protocol = window.location.protocol === 'https:' ? 'https:' : 'http:';
+      return `${protocol}//${window.location.host}`;
+    }
+    
+    // 서버사이드 렌더링시 기본값
+    return 'http://localhost:3001';
   }, []);
 
   // EmotionCard 변환 (기존 형식과 호환)

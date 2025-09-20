@@ -39,13 +39,13 @@ export default function ProductList({ categoryId }: ProductListProps) {
     fetchProducts();
   }, [categoryId]);
 
-  // 상품 클릭 시 Airflow를 통한 분석 요청 후 AnalysisPage로 이동
+  // 상품 클릭 시 분석 요청 후 바로 실시간 분석 페이지로 이동
   const handleAnalyze = async (productId: string, productUrl?: string) => {
     try {
       console.log(`🔄 Starting analysis for product: ${productId}`);
       
-      // Airflow 단일 상품 분석 요청
-      const response = await fetch('/api/analyze/airflow/single', {
+      // 분석 요청 (응답을 기다리지 않고 바로 이동)
+      fetch('/api/analyze/airflow/single', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -53,24 +53,25 @@ export default function ProductList({ categoryId }: ProductListProps) {
         body: JSON.stringify({
           productId: productId,
           productUrl: productUrl || `https://www.coupang.com/products/${productId}`,
-          userId: 'anonymous', // 현재는 익명 사용자
+          userId: 'anonymous',
         }),
-      });
-
-      const result = await response.json();
-
-      if (result.success) {
-        console.log(`✅ Analysis started successfully: ${result.dagRunId}`);
-        
-        // 분석 페이지로 이동하면서 DAG Run 정보 전달
-        navigate(`/analysis/${encodeURIComponent(productId)}?dagRunId=${result.dagRunId}&dagId=${result.dagId}`);
-      } else {
-        console.error('❌ Analysis request failed:', result.message);
-        alert('분석 요청에 실패했습니다. 다시 시도해주세요.');
-      }
+      }).then(response => response.json())
+        .then(result => {
+          if (result.success) {
+            console.log(`✅ Analysis request sent successfully: ${result.dagRunId}`);
+          } else {
+            console.error('❌ Analysis request failed:', result.message);
+          }
+        })
+        .catch(error => {
+          console.error('❌ Error requesting analysis:', error);
+        });
+      
+      // 요청을 보낸 즉시 실시간 분석 페이지로 이동
+      navigate(`/analysis/${encodeURIComponent(productId)}/realtime`);
+      
     } catch (error) {
       console.error('❌ Error requesting analysis:', error);
-      alert('분석 요청 중 오류가 발생했습니다.');
     }
   };
 

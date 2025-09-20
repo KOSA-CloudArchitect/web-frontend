@@ -173,8 +173,8 @@ function SearchPageContent() {
     try {
       console.log(`🔄 Starting analysis for product: ${productCode}`);
       
-      // Airflow 단일 상품 분석 요청
-      const response = await fetch('/api/analyze/airflow/single', {
+      // 분석 요청 (응답을 기다리지 않고 바로 이동)
+      fetch('/api/analyze/airflow/single', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -184,30 +184,23 @@ function SearchPageContent() {
           productUrl: productUrl,
           userId: 'anonymous',
         }),
-      });
-
-      const result = await response.json();
-
-      if (result.success) {
-        console.log(`✅ Analysis started successfully:`, result);
-        
-        // taskId를 사용하여 분석 페이지로 이동
-        const taskId = result.taskId || result.dagRunId;
-        const queryParams = new URLSearchParams({
-          taskId,
-          ...(result.dagRunId && { dagRunId: result.dagRunId }),
-          ...(result.dagId && { dagId: result.dagId }),
-          ...(result.status && { status: result.status }),
+      }).then(response => response.json())
+        .then(result => {
+          if (result.success) {
+            console.log(`✅ Analysis request sent successfully:`, result);
+          } else {
+            console.error('❌ Analysis request failed:', result.message);
+          }
+        })
+        .catch(error => {
+          console.error('❌ Error requesting analysis:', error);
         });
-        
-        window.location.href = `/analysis/${encodeURIComponent(productCode)}?${queryParams.toString()}`;
-      } else {
-        console.error('❌ Analysis request failed:', result.message);
-        alert('분석 요청에 실패했습니다. 다시 시도해주세요.');
-      }
+      
+      // 요청을 보낸 즉시 실시간 분석 페이지로 이동
+      window.location.href = `/analysis/${encodeURIComponent(productCode)}/realtime`;
+      
     } catch (error) {
       console.error('❌ Error requesting analysis:', error);
-      alert('분석 요청 중 오류가 발생했습니다.');
     }
   };
 

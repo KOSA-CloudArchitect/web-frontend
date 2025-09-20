@@ -1,0 +1,102 @@
+/* Full Page Scroll Styles */
+html {
+  scroll-behavior: smooth;
+}
+
+.fullpage-scroll {
+  scroll-snap-type: y mandatory;
+  overflow-y: scroll;
+  height: 100vh;
+}
+
+.fullpage-scroll section {
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+  min-height: 100vh;
+  position: relative;
+}
+
+/* Mobile responsive adjustments */
+@media (max-width: 768px) {
+  .fullpage-scroll {
+    scroll-snap-type: none;
+  }
+  
+  .fullpage-scroll section {
+    scroll-snap-align: none;
+    min-height: auto;
+  }
+}
+
+/* Smooth transitions for scroll */
+@supports (scroll-behavior: smooth) {
+  .fullpage-scroll {
+    scroll-behavior: smooth;
+  }
+}
+
+/* Phone mockup 3D effect */
+.phone-mockup {
+  transform: perspective(1000px) rotateY(-15deg);
+  transition: transform 0.3s ease;
+}
+
+.phone-mockup:hover {
+  transform: perspective(1000px) rotateY(-10deg) scale(1.02);
+}
+
+/* Floating animations for decorative elements */
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-20px);
+  }
+}
+
+.float-animation {
+  animation: float 6s ease-in-out infinite;
+}
+
+.float-animation-delayed {
+  animation: float 8s ease-in-out infinite;
+  animation-delay: 2s;
+}
+
+.float-animation-slow {
+  animation: float 10s ease-in-out infinite;
+  animation-delay: 4s;
+}
+
+/* Custom gradient background */
+.hero-gradient {
+  background: linear-gradient(135deg, #0077B6 0%, #00B4D8 50%, #FFD60A 100%);
+}
+
+/* Enhanced card hover effects */
+.enhanced-card {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.enhanced-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.12), 0 8px 30px rgba(0, 0, 0, 0.08);
+}
+
+/* Scroll indicator animation */
+@keyframes scroll-bounce {
+  0%, 20%, 50%, 80%, 100% {
+    transform: translateY(0);
+  }
+  40% {
+    transform: translateY(-10px);
+  }
+  60% {
+    transform: translateY(-5px);
+  }
+}
+
+.scroll-indicator {
+  animation: scroll-bounce 2s infinite;
+}
