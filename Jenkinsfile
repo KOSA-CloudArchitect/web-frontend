@@ -1,4 +1,4 @@
-// Jenkinsfile bulid test3
+// Jenkinsfile (Final Version for Frontend with image tag logging)
 
 pipeline {
     agent {
@@ -39,39 +39,33 @@ pipeline {
             steps {
                 dir('front-next') {
                     container('node') {
-                        echo "Running install and build for front-next..."
                         sh 'npm install --legacy-peer-deps'
                         sh 'npm run build'
                     }
                 }
                 container('podman') {
-                    echo "Verifying Docker build for front-next..."
                     sh "podman build -t frontend-build-test -f front-next/Dockerfile front-next"
                 }
             }
         }
 
-        // Stage 3 & 4: main 브랜치에서만 실제 빌드, 푸시, 배포
+        // Stage 3: main 브랜치에서만 실제 빌드 및 ECR 푸시
         stage('🚀 Build & Push to ECR') {
             when { branch 'main' }
             steps {
                 script {
                     env.FULL_IMAGE_NAME    = "${ECR_REGISTRY}/${ECR_REPOSITORY}:${COMMIT_HASH}"
-
                     dir('front-next') {
                         container('node') {
-                            // 👇 main 브랜치의 빌드 명령어도 동일하게 수정
                             sh 'npm install --legacy-peer-deps'
                             sh 'npm run build'
                         }
                     }
-
                     def ecrPassword = container('aws-cli') {
                         withCredentials([aws(credentialsId: 'aws-credentials-manual-test')]) {
                             return sh(script: "aws ecr get-login-password --region ${AWS_REGION}", returnStdout: true).trim()
                         }
                     }
-
                     container('podman') {
                         sh "echo '${ecrPassword}' | podman login --username AWS --password-stdin ${ECR_REGISTRY}"
                         sh "podman build -t ${FULL_IMAGE_NAME} -f front-next/Dockerfile front-next"
@@ -82,6 +76,7 @@ pipeline {
             }
         }
 
+        // Stage 4: main 브랜치에서만 infra 레포지토리 업데이트
         stage('🌐 Update Infra Repository') {
             when { branch 'main' }
             steps {
@@ -95,11 +90,17 @@ pipeline {
                         
                         git config user.email "jenkins-ci@example.com"
                         git config user.name "Jenkins CI"
+
+                        # 이미지 태그 기록 로직
+                        mkdir -p image
+                        echo "${COMMIT_HASH}" > image/web-frontend.txt
                         
+                        # Kustomization 파일에서 frontend 이미지의 태그를 업데이트
                         KUSTOMIZE_FILE="kubernetes/namespaces/web-tier,cache-tier/04-applications/kustomization.yaml"
                         sed -i "/name: frontend-placeholder/,/newTag/ s/newTag: .*/newTag: ${COMMIT_HASH}/" ${KUSTOMIZE_FILE}
                         
-                        git add ${KUSTOMIZE_FILE}
+                        # 커밋할 파일 목록에 이미지 태그 파일 추가
+                        git add image/web-frontend.txt ${KUSTOMIZE_FILE}
                         git commit -m "Update frontend image tag to ${COMMIT_HASH}" || echo "No changes to commit"
                         git push origin main
                     '''
