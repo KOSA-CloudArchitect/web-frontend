@@ -1,4 +1,4 @@
-// Jenkinsfile (최종 수정 완료)
+// Jenkinsfile bulid test2
 
 pipeline {
     agent {
