@@ -1,4 +1,4 @@
-// Jenkinsfile (Final Version for Frontend with image tag logging)
+// Jenkinsfile build test
 
 pipeline {
     agent {
